@@ -1,0 +1,83 @@
+.square {
+	width: 75px;
+	height: 75px;
+	background: red;
+	position: absolute;
+	cursor: move;
+}
+
+.circle {
+	width: 75px;
+	height: 75px;
+	background: blue;
+	border-radius: 50px;
+	position: absolute;
+	cursor: move;
+}
+
+.triangle-up {
+	width: 0;
+	height: 0;
+	border-left: 50px solid transparent;
+	border-right: 50px solid transparent;
+	border-bottom: 100px solid green;
+}
+
+#pacman {
+	width: 0px;
+	height: 0px;
+	border-right: 60px solid transparent;
+	border-top: 60px solid yellow;
+	border-left: 60px solid yellow;
+	border-bottom: 60px solid yellow;
+	border-top-left-radius: 60px;
+	border-top-right-radius: 60px;
+	border-bottom-left-radius: 60px;
+	border-bottom-right-radius: 60px;
+}
+
+#squareinside {
+	width: 100px;
+	height: 100px;
+	background: gray;
+}
+
+#circleinside {
+	width: 100px;
+	height: 100px;
+	background: gray;
+	-moz-border-radius: 50px;
+	-webkit-border-radius: 50px;
+	border-radius: 50px;
+}
+
+#triangle-upinside {
+	width: 0;
+	height: 0;
+	border-left: 50px solid transparent;
+	border-right: 50px solid transparent;
+	border-bottom: 100px solid gray;
+}
+
+#pacmaninside {
+	width: 0px;
+	height: 0px;
+	border-right: 60px solid transparent;
+	border-top: 60px solid gray;
+	border-left: 60px solid gray;
+	border-bottom: 60px solid gray;
+	border-top-left-radius: 60px;
+	border-top-right-radius: 60px;
+	border-bottom-left-radius: 60px;
+	border-bottom-right-radius: 60px;
+}
+
+body{
+	background-color:bisque;
+	overflow:hidden;
+}
+
+#centerText{
+	font-family: 'Rock Salt', cursive;
+	font-size:xx-large;
+}
