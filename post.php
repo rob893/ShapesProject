@@ -3,10 +3,11 @@ require_once('dbconnection.php');
 
 if(isset($_POST['data']) && isset($_POST['roomName'])){
 	$data = json_decode($_POST['data'], true);
+	$roomSize = json_decode($_POST['roomSize'], true);
 	$roomName = $_POST['roomName'];
 	
-	$sqlInsertRoom = $conn->prepare("INSERT INTO rooms(roomName) VALUES(?)");
-	$sqlInsertRoom->bind_param('s', $roomName);
+	$sqlInsertRoom = $conn->prepare("INSERT INTO rooms(roomName, height, width) VALUES(?, ?, ?)");
+	$sqlInsertRoom->bind_param('sii', $roomName, $roomSize['h'], $roomSize['w']);
 	
 	if($sqlInsertRoom->execute() === true){
 		$sqlInsertRoom->close();
@@ -19,8 +20,8 @@ if(isset($_POST['data']) && isset($_POST['roomName'])){
 	
 	foreach($data as $id => $location){
 
-		$sqlInsert = $conn->prepare("INSERT INTO shapes(roomName, x, y, shapeId) VALUES(?, ?, ?, ?)");
-		$sqlInsert->bind_param('siii', $roomName, $location['x'], $location['y'], $id);
+		$sqlInsert = $conn->prepare("INSERT INTO shapes(roomName, x, y, h, w, shapeId) VALUES(?, ?, ?, ?, ?, ?)");
+		$sqlInsert->bind_param('siiiii', $roomName, $location['x'], $location['y'], $location['h'], $location['w'], $id);
 		
 		if($sqlInsert->execute() === true){
 			$sqlInsert->close();
@@ -43,8 +44,12 @@ else if(isset($_POST['roomId'])){
 
 	$testRoom = [];
 	while($row = $results->fetch_assoc()){
-		$testRoom[$row['shapeId']]['x'] = (float)$row['x'];
-		$testRoom[$row['shapeId']]['y'] = (float)$row['y'];
+		$testRoom['roomSize']['h'] = (float)$row['height'];
+		$testRoom['roomSize']['w'] = (float)$row['width'];
+		$testRoom['roomShapes'][$row['shapeId']]['x'] = (float)$row['x'];
+		$testRoom['roomShapes'][$row['shapeId']]['y'] = (float)$row['y'];
+		$testRoom['roomShapes'][$row['shapeId']]['h'] = (float)$row['h'];
+		$testRoom['roomShapes'][$row['shapeId']]['w'] = (float)$row['w'];
 	}
 	
 	$testRoomJSON = json_encode($testRoom);

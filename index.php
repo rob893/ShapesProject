@@ -11,7 +11,10 @@
   <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
   <script src="jquery.ui.touch-punch.min.js"></script>
   <script>
-  
+	
+	var dictionary = {};
+	var room = {};
+	
 	$(document).ready(
 		function() {
 			document.getElementById("loadSavedRoomButton").addEventListener("click", function() {
@@ -31,10 +34,11 @@
 			}, false);
 			
 			updateSelectOptions();
+			
+			room['h'] = $("#container").height();
+			room['w'] = $("#container").width();
 		} 
 	);
-	
-	var dictionary = {};
 	
 	$(function() {
 		$(".draggable").draggable({
@@ -69,17 +73,66 @@
 					dictionary[$(this).attr('id')] = {};
 					dictionary[$(this).attr('id')]['x'] = p.left;
 					dictionary[$(this).attr('id')]['y'] = p.top;
+					dictionary[$(this).attr('id')]['h'] = $(this).height();
+					dictionary[$(this).attr('id')]['w'] = $(this).width();
 					console.log(dictionary[$(this).attr('id')]);
 				} else {
 					dictionary[$(this).attr('id')]['x'] = p.left;
 					dictionary[$(this).attr('id')]['y'] = p.top;
+					dictionary[$(this).attr('id')]['h'] = $(this).height();
+					dictionary[$(this).attr('id')]['w'] = $(this).width();
 					console.log(dictionary[$(this).attr('id')]);
 					console.log("updating location for " + $(this).attr('id'));
 				}
 			}
 		});
 		
-		$("#container").resizable();
+		$(".square").resizable({
+			stop: function(event){
+				o = $(this).offset();
+				p = $(this).position();
+			
+				for(var i = 1; i <= 6; i++){
+					
+					if(!($(this).is($("#" + i))) && collision($(this), $("#" + i))){
+						alert("two shapes cannot occupy the same space!");
+	
+						if(dictionary.hasOwnProperty($(this).attr('id'))){
+							console.log("removing from dictionary");
+							delete dictionary[$(this).attr('id')];
+						}
+		
+						resetToStartPosition($(this).attr("id"));
+						return;
+					}
+				}
+				
+				if(!dictionary.hasOwnProperty($(this).attr('id'))){
+					console.log("adding location for " + $(this).attr('id'));
+					dictionary[$(this).attr('id')] = {};
+					dictionary[$(this).attr('id')]['x'] = p.left;
+					dictionary[$(this).attr('id')]['y'] = p.top;
+					dictionary[$(this).attr('id')]['h'] = $(this).height();
+					dictionary[$(this).attr('id')]['w'] = $(this).width();
+					console.log(dictionary[$(this).attr('id')]);
+				} else {
+					dictionary[$(this).attr('id')]['x'] = p.left;
+					dictionary[$(this).attr('id')]['y'] = p.top;
+					dictionary[$(this).attr('id')]['h'] = $(this).height();
+					dictionary[$(this).attr('id')]['w'] = $(this).width();
+					console.log(dictionary[$(this).attr('id')]);
+					console.log("updating location for " + $(this).attr('id'));
+				}
+			}
+		});
+		
+		$("#container").resizable({
+			stop: function(event){
+				
+				room['h'] = $(this).height();
+				room['w'] = $(this).width();
+			}
+		});
 	});
 	
 	
@@ -97,12 +150,14 @@
 		return true;
 	}
 	
-	function setPosition(id, x, y){
+	function setPosition(id, x, y, h, w){
 		$("#" + id).appendTo("#container");
 		$("#" + id).css({ top: y, left: x});
+		$("#" + id).height(h);
+		$("#" + id).width(w);
 		
 		for(var i = 1; i <= 6; i++){
-					
+			console.log(i);
 			if(!($("#" + id).is($("#" + i))) && collision($("#" + id), $("#" + i))){
 				alert("two shapes cannot occupy the same space!");
 
@@ -121,18 +176,29 @@
 			dictionary[id] = {};
 			dictionary[id]['x'] = x;
 			dictionary[id]['y'] = y;
+			dictionary[id]['h'] = h;
+			dictionary[id]['w'] = w;
 			console.log(dictionary[id]);
 		} else {
 			dictionary[id]['x'] = x;
 			dictionary[id]['y'] = y;
+			dictionary[id]['h'] = h;
+			dictionary[id]['w'] = w;
 			console.log(dictionary[id]);
 			console.log("updating location for " + id);
 		}
 	}
 	
+	function setRoomSize(h, w){
+		$("#container").height(h);
+		$("#container").width(w);
+	}
+	
 	function resetToStartPosition(id){
 		$("#" + id).appendTo("body");
-		$("#" + id).css({ top: 0, left: 0});
+		$("#" + id).css({ top: 0, left: 0 });
+		$("#" + id).height(75);
+		$("#" + id).width(75);
 		switch(id){
 			case "1":
 				$("#1").offset({ top: 0, left: 0});
@@ -157,9 +223,11 @@
 	
 	function printDictionary(){
 		document.getElementById("text1").innerHTML = "";
+		document.getElementById("text1").innerHTML += "Room size: h: " + room['h'] + " w: " + room['w'] + "<br>";
 		for(var key in dictionary){
 			console.log(key + " " + dictionary[key]);
-			document.getElementById("text1").innerHTML += "Element id: " + key + ". Location: x: " + dictionary[key]['x'] + ", y: " + dictionary[key]['y'] + "<br>";
+			document.getElementById("text1").innerHTML += "Element id: " + key + ". Location: x: " + dictionary[key]['x'] + ", y: " + dictionary[key]['y'] + 
+				" Size: h: " + dictionary[key]['h'] + ", w: " + dictionary[key]['w'] + "<br>";
 		}
 	}
 	
@@ -184,13 +252,15 @@
 		}
 		
 		var dictionaryAsJSON = JSON.stringify(dictionary);
-
+		var roomSizeAsJSON = JSON.stringify(room);
+		
 		$.ajax({
 			url: "post.php",
 			type: "POST",
 			data: {
 				data: dictionaryAsJSON,
-				roomName: $("#roomName").val()
+				roomName: $("#roomName").val(),
+				roomSize: roomSizeAsJSON
 			},
 			success: function(jsonString){
 				$("#result").html(jsonString);
@@ -227,8 +297,9 @@
 			data: {roomId: roomId},
 			dataType: "JSON",
 			success: function(roomToLoad){
-				for(var item in roomToLoad){
-					setPosition(item, roomToLoad[item]['x'], roomToLoad[item]['y']);
+				setRoomSize(roomToLoad['roomSize']['h'], roomToLoad['roomSize']['w']);
+				for(var item in roomToLoad['roomShapes']){
+					setPosition(item, roomToLoad['roomShapes'][item]['x'], roomToLoad['roomShapes'][item]['y'], roomToLoad['roomShapes'][item]['h'], roomToLoad['roomShapes'][item]['w']);
 				}
 			}
 		});
