@@ -12,6 +12,28 @@
   <script src="jquery.ui.touch-punch.min.js"></script>
   <script>
   
+	$(document).ready(
+		function() {
+			document.getElementById("loadSavedRoomButton").addEventListener("click", function() {
+				loadSavedRoom($("#loadRoomId").val());
+			}, false);
+			
+			document.getElementById("saveDataAsJSON").addEventListener("click", function() {
+				saveDataAsJSON();
+			}, false);
+			
+			document.getElementById("printDictionary").addEventListener("click", function() {
+				printDictionary();
+			}, false);
+			
+			document.getElementById("clearDictionary").addEventListener("click", function() {
+				clearDictionary();
+			}, false);
+			
+			updateSelectOptions();
+		} 
+	);
+	
 	var dictionary = {};
 	
 	$(function() {
@@ -57,6 +79,8 @@
 			}
 		});
 	});
+	
+	
 	
 	function collision($div1, $div2) {
 		var x1 = $div1.offset().left;
@@ -142,8 +166,8 @@
 			resetToStartPosition(item);
 		}
 		dictionary = {};
-		$("#text1").text("");
-		$("#result").text("");
+		$("#text1").html("");
+		$("#result").html("");
 	}
 	
 	function saveDataAsJSON(){
@@ -152,14 +176,58 @@
 			return;
 		}
 		
+		if($("#roomName").val() == ""){
+			alert("Please enter a room name.");
+			return;
+		}
+		
 		var dictionaryAsJSON = JSON.stringify(dictionary);
 
 		$.ajax({
 			url: "post.php",
 			type: "POST",
-			data: {data: dictionaryAsJSON},
+			data: {
+				data: dictionaryAsJSON,
+				roomName: $("#roomName").val()
+			},
 			success: function(jsonString){
-				$("#result").text(jsonString);
+				$("#result").html(jsonString);
+				updateSelectOptions();
+			}
+		});
+	}
+	
+	function updateSelectOptions(){
+		$.ajax({
+			url: "post.php",
+			type: "POST",
+			data: {
+				updateSelectOptions: true
+			},
+			dataType: "JSON",
+			success: function(rooms){
+				var select = document.getElementById("loadRoomId");
+				select.options.length = 0;
+				for(var room in rooms){
+					select.options.add(new Option(rooms[room], room));
+				}
+			}
+		});
+	}
+	
+	function loadSavedRoom(roomId){
+		
+		clearDictionary();
+		
+		$.ajax({
+			url: "post.php",
+			type: "POST",
+			data: {roomId: roomId},
+			dataType: "JSON",
+			success: function(roomToLoad){
+				for(var item in roomToLoad){
+					setPosition(item, roomToLoad[item]['x'], roomToLoad[item]['y']);
+				}
 			}
 		});
 	}
@@ -182,16 +250,21 @@
 
 <div id="6" class="square draggable" style="left: 0px; top: 425px;"></div>
 
-<button type="button" onclick="printDictionary()">Print Dictionary</button>
+<button type="button" id="printDictionary">Print Dictionary</button>
 <br>
 <br>
-<button type="button" onclick="clearDictionary()">Clear Room</button>
+<button type="button" id="clearDictionary">Clear Room</button>
 <br>
 <br>
-<button type="button" onclick="setPosition(1, 0, 0)">Test Set Position Function</button>
+
+<button type="button" id='loadSavedRoomButton'>Load Saved Room</button>
+<select class='form-control' id='loadRoomId' name='loadRoomId'></select>
 <br>
 <br>
-<button type="button" onclick="saveDataAsJSON()">Save to Database</button>
+<form method="post">
+	<button type="button" id="saveDataAsJSON">Save to Database</button>
+	<input type="text" name="roomName" id="roomName" placeholder="room name"></input>
+</form>
 <div id='text1'></div>
 <div id='result'></div>
  
