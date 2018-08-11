@@ -14,6 +14,7 @@
 	
 	var dictionary = {};
 	var room = {};
+	var shapeIdIndex = 1;
 	
 	$(document).ready(
 		function() {
@@ -53,7 +54,7 @@
 				o = $(this).offset();
 				p = $(this).position();
 			
-				for(var i = 1; i <= 6; i++){
+				for(var i = 1; i < shapeIdIndex; i++){
 					
 					if(!($(this).is($("#" + i))) && collision($(this), $("#" + i))){
 						alert("two shapes cannot occupy the same space!");
@@ -92,7 +93,7 @@
 				o = $(this).offset();
 				p = $(this).position();
 			
-				for(var i = 1; i <= 6; i++){
+				for(var i = 1; i < shapeIdIndex; i++){
 					
 					if(!($(this).is($("#" + i))) && collision($(this), $("#" + i))){
 						alert("two shapes cannot occupy the same space!");
@@ -150,14 +151,109 @@
 		return true;
 	}
 	
-	function setPosition(id, x, y, h, w){
+	function createShape(){
+		var newShape = $('<div/>', {class: 'square', id: shapeIdIndex, style: 'position: absolute'});
+		newShape.draggable({
+			containment: "#container",
+			scroll: false,
+			start: function(event){
+				$(this).appendTo("#container");
+				//$(this).offset({ top: 0, left: 0});
+			},
+			stop: function(event) {
+				
+				o = $(this).offset();
+				p = $(this).position();
+			
+				for(var i = 1; i < shapeIdIndex; i++){
+					
+					if(!($(this).is($("#" + i))) && collision($(this), $("#" + i))){
+						alert("two shapes cannot occupy the same space!");
+	
+						if(dictionary.hasOwnProperty($(this).attr('id'))){
+							console.log("removing from dictionary");
+							delete dictionary[$(this).attr('id')];
+						}
+		
+						resetToStartPosition($(this).attr("id"));
+						return;
+					}
+				}
+				
+				if(!dictionary.hasOwnProperty($(this).attr('id'))){
+					console.log("adding location for " + $(this).attr('id'));
+					dictionary[$(this).attr('id')] = {};
+					dictionary[$(this).attr('id')]['x'] = p.left;
+					dictionary[$(this).attr('id')]['y'] = p.top;
+					dictionary[$(this).attr('id')]['h'] = $(this).height();
+					dictionary[$(this).attr('id')]['w'] = $(this).width();
+					console.log(dictionary[$(this).attr('id')]);
+				} else {
+					dictionary[$(this).attr('id')]['x'] = p.left;
+					dictionary[$(this).attr('id')]['y'] = p.top;
+					dictionary[$(this).attr('id')]['h'] = $(this).height();
+					dictionary[$(this).attr('id')]['w'] = $(this).width();
+					console.log(dictionary[$(this).attr('id')]);
+					console.log("updating location for " + $(this).attr('id'));
+				}
+			}
+		});
+		
+		newShape.resizable({
+			stop: function(event){
+				o = $(this).offset();
+				p = $(this).position();
+			
+				for(var i = 1; i < shapeIdIndex; i++){
+					
+					if(!($(this).is($("#" + i))) && collision($(this), $("#" + i))){
+						alert("two shapes cannot occupy the same space!");
+	
+						if(dictionary.hasOwnProperty($(this).attr('id'))){
+							console.log("removing from dictionary");
+							delete dictionary[$(this).attr('id')];
+						}
+		
+						resetToStartPosition($(this).attr("id"));
+						return;
+					}
+				}
+				
+				if(!dictionary.hasOwnProperty($(this).attr('id'))){
+					console.log("adding location for " + $(this).attr('id'));
+					dictionary[$(this).attr('id')] = {};
+					dictionary[$(this).attr('id')]['x'] = p.left;
+					dictionary[$(this).attr('id')]['y'] = p.top;
+					dictionary[$(this).attr('id')]['h'] = $(this).height();
+					dictionary[$(this).attr('id')]['w'] = $(this).width();
+					console.log(dictionary[$(this).attr('id')]);
+				} else {
+					dictionary[$(this).attr('id')]['x'] = p.left;
+					dictionary[$(this).attr('id')]['y'] = p.top;
+					dictionary[$(this).attr('id')]['h'] = $(this).height();
+					dictionary[$(this).attr('id')]['w'] = $(this).width();
+					console.log(dictionary[$(this).attr('id')]);
+					console.log("updating location for " + $(this).attr('id'));
+				}
+			}
+		});
+		$(newShape).appendTo($("#container"));
+		//$(newShape).css({ top: 50, left: 50});
+		//newShape.draggable();
+		shapeIdIndex++;
+		return newShape;
+	}
+	
+	function setPosition(item, x, y, h, w){
+		var id = $(item).attr('id');
+		console.log(id);
 		$("#" + id).appendTo("#container");
 		$("#" + id).css({ top: y, left: x});
 		$("#" + id).height(h);
 		$("#" + id).width(w);
 		
-		for(var i = 1; i <= 6; i++){
-			console.log(i);
+		for(var i = 1; i < shapeIdIndex; i++){
+			//console.log(i);
 			if(!($("#" + id).is($("#" + i))) && collision($("#" + id), $("#" + i))){
 				alert("two shapes cannot occupy the same space!");
 
@@ -232,9 +328,11 @@
 	}
 	
 	function clearDictionary(){
-		for(var item in dictionary){
-			resetToStartPosition(item);
-		}
+		// for(var item in dictionary){
+			// resetToStartPosition(item);
+		// }
+		$(".square").remove();
+		shapeIdIndex = 1;
 		dictionary = {};
 		$("#text1").html("");
 		$("#result").html("");
@@ -299,7 +397,8 @@
 			success: function(roomToLoad){
 				setRoomSize(roomToLoad['roomSize']['h'], roomToLoad['roomSize']['w']);
 				for(var item in roomToLoad['roomShapes']){
-					setPosition(item, roomToLoad['roomShapes'][item]['x'], roomToLoad['roomShapes'][item]['y'], roomToLoad['roomShapes'][item]['h'], roomToLoad['roomShapes'][item]['w']);
+					var newShape = createShape();
+					setPosition(newShape, roomToLoad['roomShapes'][item]['x'], roomToLoad['roomShapes'][item]['y'], roomToLoad['roomShapes'][item]['h'], roomToLoad['roomShapes'][item]['w']);
 				}
 			}
 		});
@@ -311,6 +410,7 @@
 
 <div id="container" style="width: 500px; height: 500px; border: 1px solid black; position: relative; left: 125px; right: 50px;" ></div>
 
+<!--
 <div id="1" class="square draggable" style="left: 0px; top: 0px;"></div>
 	
 <div id="2" class="square draggable" style="left: 0px; top: 85px;"></div>
@@ -322,14 +422,16 @@
 <div id="5" class="square draggable" style="left: 0px; top: 340px;"></div>
 
 <div id="6" class="square draggable" style="left: 0px; top: 425px;"></div>
-
+-->
 <button type="button" id="printDictionary">Print Dictionary</button>
 <br>
 <br>
 <button type="button" id="clearDictionary">Clear Room</button>
 <br>
 <br>
-
+<button type="button" id="makeShape" onclick="createShape()">Make shape</button>
+<br>
+<br>
 <button type="button" id='loadSavedRoomButton'>Load Saved Room</button>
 <select class='form-control' id='loadRoomId' name='loadRoomId'></select>
 <br>
