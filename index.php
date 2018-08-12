@@ -34,6 +34,10 @@
 				clearDictionary();
 			}, false);
 			
+			document.getElementById("makeShape").addEventListener("click", function() {
+				createShape();
+			}, false);
+			
 			updateSelectOptions();
 			
 			room['h'] = $("#container").height();
@@ -42,91 +46,6 @@
 	);
 	
 	$(function() {
-		$(".draggable").draggable({
-			containment: "#container",
-			scroll: false,
-			start: function(event){
-				$(this).appendTo("#container");
-				$(this).offset({ top: 0, left: 0});
-			},
-			stop: function(event) {
-				
-				o = $(this).offset();
-				p = $(this).position();
-			
-				for(var i = 1; i < shapeIdIndex; i++){
-					
-					if(!($(this).is($("#" + i))) && collision($(this), $("#" + i))){
-						alert("two shapes cannot occupy the same space!");
-	
-						if(dictionary.hasOwnProperty($(this).attr('id'))){
-							console.log("removing from dictionary");
-							delete dictionary[$(this).attr('id')];
-						}
-		
-						resetToStartPosition($(this).attr("id"));
-						return;
-					}
-				}
-				
-				if(!dictionary.hasOwnProperty($(this).attr('id'))){
-					console.log("adding location for " + $(this).attr('id'));
-					dictionary[$(this).attr('id')] = {};
-					dictionary[$(this).attr('id')]['x'] = p.left;
-					dictionary[$(this).attr('id')]['y'] = p.top;
-					dictionary[$(this).attr('id')]['h'] = $(this).height();
-					dictionary[$(this).attr('id')]['w'] = $(this).width();
-					console.log(dictionary[$(this).attr('id')]);
-				} else {
-					dictionary[$(this).attr('id')]['x'] = p.left;
-					dictionary[$(this).attr('id')]['y'] = p.top;
-					dictionary[$(this).attr('id')]['h'] = $(this).height();
-					dictionary[$(this).attr('id')]['w'] = $(this).width();
-					console.log(dictionary[$(this).attr('id')]);
-					console.log("updating location for " + $(this).attr('id'));
-				}
-			}
-		});
-		
-		$(".square").resizable({
-			stop: function(event){
-				o = $(this).offset();
-				p = $(this).position();
-			
-				for(var i = 1; i < shapeIdIndex; i++){
-					
-					if(!($(this).is($("#" + i))) && collision($(this), $("#" + i))){
-						alert("two shapes cannot occupy the same space!");
-	
-						if(dictionary.hasOwnProperty($(this).attr('id'))){
-							console.log("removing from dictionary");
-							delete dictionary[$(this).attr('id')];
-						}
-		
-						resetToStartPosition($(this).attr("id"));
-						return;
-					}
-				}
-				
-				if(!dictionary.hasOwnProperty($(this).attr('id'))){
-					console.log("adding location for " + $(this).attr('id'));
-					dictionary[$(this).attr('id')] = {};
-					dictionary[$(this).attr('id')]['x'] = p.left;
-					dictionary[$(this).attr('id')]['y'] = p.top;
-					dictionary[$(this).attr('id')]['h'] = $(this).height();
-					dictionary[$(this).attr('id')]['w'] = $(this).width();
-					console.log(dictionary[$(this).attr('id')]);
-				} else {
-					dictionary[$(this).attr('id')]['x'] = p.left;
-					dictionary[$(this).attr('id')]['y'] = p.top;
-					dictionary[$(this).attr('id')]['h'] = $(this).height();
-					dictionary[$(this).attr('id')]['w'] = $(this).width();
-					console.log(dictionary[$(this).attr('id')]);
-					console.log("updating location for " + $(this).attr('id'));
-				}
-			}
-		});
-		
 		$("#container").resizable({
 			stop: function(event){
 				
@@ -135,8 +54,6 @@
 			}
 		});
 	});
-	
-	
 	
 	function collision($div1, $div2) {
 		var x1 = $div1.offset().left;
@@ -151,50 +68,157 @@
 		return true;
 	}
 	
+	function checkForCollision(shape){
+		for(var item in dictionary){
+			if(!(shape.is($("#" + item))) && collision(shape, $("#" + item))){
+				return $("#" + item);
+			}
+		}
+		return null;
+	}
+	
+	function handleCollision(shape){
+		
+		o = shape.offset();
+		p = shape.position();
+		var other = checkForCollision(shape);
+		var infiLoopCatcher = 0;
+		var prevMove = null;
+		while(other != null && infiLoopCatcher < 500){
+			
+			var distanceRight = (other.position().left + other.outerWidth(true)) - p.left;
+			var distanceDown = (other.position().top + other.outerHeight(true)) - p.top;
+			var distanceLeft = (p.left + shape.outerWidth(true)) - other.position().left;
+			var distanceUp = (p.top + shape.outerHeight(true)) - other.position().top;
+			
+			if((p.left - distanceLeft - 2) < 0 || prevMove == "right"){
+				distanceLeft = Number.POSITIVE_INFINITY; 
+			}
+			if((p.top - distanceUp - 2) < 0 || prevMove == "down"){
+				distanceUp = Number.POSITIVE_INFINITY; 
+			}
+			if((p.left + shape.outerWidth(true) + distanceRight + 2) > $("#container").width() || prevMove == "left"){
+				distanceRight = Number.POSITIVE_INFINITY; 
+			}
+			if((p.top + shape.outerHeight(true) + distanceDown + 2) > $("#container").height() || prevMove == "up"){
+				distanceDown = Number.POSITIVE_INFINITY; 
+			}
+			
+			if(distanceRight < distanceDown && distanceRight < distanceLeft && distanceRight < distanceUp){
+				var newLeft = p.left + distanceRight + 2;
+				p.left = newLeft;
+				shape.css({ left: newLeft});
+				prevMove = "right";
+			}
+			else if(distanceDown < distanceRight && distanceDown < distanceLeft && distanceDown < distanceUp){
+				var newTop = p.top + distanceDown + 2;
+				p.top = newTop;
+				shape.css({ top: newTop});
+				prevMove = "down";
+			}
+			else if(distanceUp < distanceRight && distanceUp < distanceLeft && distanceUp < distanceDown){
+				var newTop = p.top - distanceUp - 2;
+				p.top = newTop;
+				shape.css({ top: newTop});
+				prevMove = "up";
+			}
+			else if(distanceLeft < distanceRight && distanceLeft < distanceUp && distanceLeft < distanceDown){
+				var newLeft = p.left - distanceLeft - 2;
+				p.left = newLeft;
+				shape.css({ left: newLeft});
+				prevMove = "left";
+			}
+			else { //todo, make the move based off of furthest distacne from edge of room.
+				var move = Math.floor(Math.random() * 4) + 1;
+				prevMove == null;
+				switch(move){
+					case 1:
+						var newLeft = p.left + 2;
+						p.left = newLeft;
+						shape.css({ left: newLeft});
+						break;
+					case 2:
+						var newTop = p.top + 2;
+						p.top = newTop;
+						shape.css({ top: newTop});
+						break;
+					case 3:
+						var newTop = p.top - 2;
+						p.top = newTop;
+						shape.css({ top: newTop});
+						break;
+					case 4:
+						var newLeft = p.left - 2;
+						p.left = newLeft;
+						shape.css({ left: newLeft});
+						break;
+				}
+			}
+			
+			other = checkForCollision(shape);
+			infiLoopCatcher++;
+			if(infiLoopCatcher == 500){
+				alert("Cannot find room. Deleting this shape.")
+				if(dictionary.hasOwnProperty(shape.attr('id'))){
+					delete dictionary[shape.attr('id')];
+				}
+				shape.remove();
+				shapeIdIndex--;
+				return false;
+			}
+		}
+		return true;
+	}
+	
 	function createShape(){
 		var newShape = $('<div/>', {class: 'square', id: shapeIdIndex, style: 'position: absolute'});
+		$(newShape).appendTo($("#container"));
+		shapeIdIndex++;
+		
+		o = newShape.offset();
+		p = newShape.position();
+		
+		if(!handleCollision(newShape)){
+			return;
+		}
+		
+		if(!dictionary.hasOwnProperty(newShape.attr('id'))){
+			dictionary[newShape.attr('id')] = {};
+			dictionary[newShape.attr('id')]['x'] = p.left;
+			dictionary[newShape.attr('id')]['y'] = p.top;
+			dictionary[newShape.attr('id')]['h'] = newShape.height();
+			dictionary[newShape.attr('id')]['w'] = newShape.width();
+		} else {
+			dictionary[newShape.attr('id')]['x'] = p.left;
+			dictionary[newShape.attr('id')]['y'] = p.top;
+			dictionary[newShape.attr('id')]['h'] = newShape.height();
+			dictionary[newShape.attr('id')]['w'] = newShape.width();
+		}
+		
 		newShape.draggable({
 			containment: "#container",
 			scroll: false,
-			start: function(event){
-				$(this).appendTo("#container");
-				//$(this).offset({ top: 0, left: 0});
-			},
+			
 			stop: function(event) {
 				
 				o = $(this).offset();
 				p = $(this).position();
-			
-				for(var i = 1; i < shapeIdIndex; i++){
-					
-					if(!($(this).is($("#" + i))) && collision($(this), $("#" + i))){
-						alert("two shapes cannot occupy the same space!");
-	
-						if(dictionary.hasOwnProperty($(this).attr('id'))){
-							console.log("removing from dictionary");
-							delete dictionary[$(this).attr('id')];
-						}
-		
-						resetToStartPosition($(this).attr("id"));
-						return;
-					}
+				
+				if(!handleCollision($(this))){
+					return;
 				}
 				
 				if(!dictionary.hasOwnProperty($(this).attr('id'))){
-					console.log("adding location for " + $(this).attr('id'));
 					dictionary[$(this).attr('id')] = {};
 					dictionary[$(this).attr('id')]['x'] = p.left;
 					dictionary[$(this).attr('id')]['y'] = p.top;
 					dictionary[$(this).attr('id')]['h'] = $(this).height();
 					dictionary[$(this).attr('id')]['w'] = $(this).width();
-					console.log(dictionary[$(this).attr('id')]);
 				} else {
 					dictionary[$(this).attr('id')]['x'] = p.left;
 					dictionary[$(this).attr('id')]['y'] = p.top;
 					dictionary[$(this).attr('id')]['h'] = $(this).height();
 					dictionary[$(this).attr('id')]['w'] = $(this).width();
-					console.log(dictionary[$(this).attr('id')]);
-					console.log("updating location for " + $(this).attr('id'));
 				}
 			}
 		});
@@ -203,85 +227,50 @@
 			stop: function(event){
 				o = $(this).offset();
 				p = $(this).position();
-			
-				for(var i = 1; i < shapeIdIndex; i++){
-					
-					if(!($(this).is($("#" + i))) && collision($(this), $("#" + i))){
-						alert("two shapes cannot occupy the same space!");
-	
-						if(dictionary.hasOwnProperty($(this).attr('id'))){
-							console.log("removing from dictionary");
-							delete dictionary[$(this).attr('id')];
-						}
-		
-						resetToStartPosition($(this).attr("id"));
-						return;
-					}
+				
+				if(!handleCollision($(this))){
+					return;
 				}
 				
 				if(!dictionary.hasOwnProperty($(this).attr('id'))){
-					console.log("adding location for " + $(this).attr('id'));
 					dictionary[$(this).attr('id')] = {};
 					dictionary[$(this).attr('id')]['x'] = p.left;
 					dictionary[$(this).attr('id')]['y'] = p.top;
 					dictionary[$(this).attr('id')]['h'] = $(this).height();
 					dictionary[$(this).attr('id')]['w'] = $(this).width();
-					console.log(dictionary[$(this).attr('id')]);
 				} else {
 					dictionary[$(this).attr('id')]['x'] = p.left;
 					dictionary[$(this).attr('id')]['y'] = p.top;
 					dictionary[$(this).attr('id')]['h'] = $(this).height();
 					dictionary[$(this).attr('id')]['w'] = $(this).width();
-					console.log(dictionary[$(this).attr('id')]);
-					console.log("updating location for " + $(this).attr('id'));
 				}
 			}
 		});
-		$(newShape).appendTo($("#container"));
-		//$(newShape).css({ top: 50, left: 50});
-		//newShape.draggable();
-		shapeIdIndex++;
+		
 		return newShape;
 	}
 	
 	function setPosition(item, x, y, h, w){
 		var id = $(item).attr('id');
-		console.log(id);
-		$("#" + id).appendTo("#container");
-		$("#" + id).css({ top: y, left: x});
-		$("#" + id).height(h);
-		$("#" + id).width(w);
+		item.css({ top: y, left: x});
+		item.height(h);
+		item.width(w);
 		
-		for(var i = 1; i < shapeIdIndex; i++){
-			//console.log(i);
-			if(!($("#" + id).is($("#" + i))) && collision($("#" + id), $("#" + i))){
-				alert("two shapes cannot occupy the same space!");
-
-				if(dictionary.hasOwnProperty(id)){
-					console.log("removing from dictionary");
-					delete dictionary[id];
-				}
-
-				resetToStartPosition(id);
-				return;
-			}
+		if(!handleCollision(item)){
+			return;
 		}
 		
 		if(!dictionary.hasOwnProperty(id)){
-			console.log("adding location for " + id);
 			dictionary[id] = {};
 			dictionary[id]['x'] = x;
 			dictionary[id]['y'] = y;
 			dictionary[id]['h'] = h;
 			dictionary[id]['w'] = w;
-			console.log(dictionary[id]);
 		} else {
 			dictionary[id]['x'] = x;
 			dictionary[id]['y'] = y;
 			dictionary[id]['h'] = h;
 			dictionary[id]['w'] = w;
-			console.log(dictionary[id]);
-			console.log("updating location for " + id);
 		}
 	}
 	
@@ -290,38 +279,10 @@
 		$("#container").width(w);
 	}
 	
-	function resetToStartPosition(id){
-		$("#" + id).appendTo("body");
-		$("#" + id).css({ top: 0, left: 0 });
-		$("#" + id).height(75);
-		$("#" + id).width(75);
-		switch(id){
-			case "1":
-				$("#1").offset({ top: 0, left: 0});
-				break;
-			case "2":
-				$("#2").offset({ top: 85, left: 0});
-				break;
-			case "3":
-				$("#3").offset({ top: 170, left: 0});
-				break;
-			case "4":
-				$("#4").offset({ top: 255, left: 0});
-				break;
-			case "5":
-				$("#5").offset({ top: 340, left: 0});
-				break;
-			case "6":
-				$("#6").offset({ top: 425, left: 0});
-				break;
-		}
-	}
-	
 	function printDictionary(){
 		document.getElementById("text1").innerHTML = "";
 		document.getElementById("text1").innerHTML += "Room size: h: " + room['h'] + " w: " + room['w'] + "<br>";
 		for(var key in dictionary){
-			console.log(key + " " + dictionary[key]);
 			document.getElementById("text1").innerHTML += "Element id: " + key + ". Location: x: " + dictionary[key]['x'] + ", y: " + dictionary[key]['y'] + 
 				" Size: h: " + dictionary[key]['h'] + ", w: " + dictionary[key]['w'] + "<br>";
 		}
@@ -408,40 +369,27 @@
 </head>
 <body>
 
-<div id="container" style="width: 500px; height: 500px; border: 1px solid black; position: relative; left: 125px; right: 50px;" ></div>
-
-<!--
-<div id="1" class="square draggable" style="left: 0px; top: 0px;"></div>
-	
-<div id="2" class="square draggable" style="left: 0px; top: 85px;"></div>
-
-<div id="3" class="square draggable" style="left: 0px; top: 170px;"></div>
-
-<div id="4" class="square draggable" style="left: 0px; top: 255px;"></div>
-	
-<div id="5" class="square draggable" style="left: 0px; top: 340px;"></div>
-
-<div id="6" class="square draggable" style="left: 0px; top: 425px;"></div>
--->
-<button type="button" id="printDictionary">Print Dictionary</button>
-<br>
-<br>
-<button type="button" id="clearDictionary">Clear Room</button>
-<br>
-<br>
-<button type="button" id="makeShape" onclick="createShape()">Make shape</button>
-<br>
-<br>
-<button type="button" id='loadSavedRoomButton'>Load Saved Room</button>
-<select class='form-control' id='loadRoomId' name='loadRoomId'></select>
-<br>
-<br>
-<form method="post">
-	<button type="button" id="saveDataAsJSON">Save to Database</button>
-	<input type="text" name="roomName" id="roomName" placeholder="room name"></input>
-</form>
-<div id='text1'></div>
-<div id='result'></div>
+	<div id="container" style="width: 500px; height: 500px; border: 1px solid black; position: relative;" ></div>
+	<br>
+	<button type="button" id="printDictionary">Print Dictionary</button>
+	<br>
+	<br>
+	<button type="button" id="clearDictionary">Clear Room</button>
+	<br>
+	<br>
+	<button type="button" id="makeShape">Make shape</button>
+	<br>
+	<br>
+	<button type="button" id='loadSavedRoomButton'>Load Saved Room</button>
+	<select class='form-control' id='loadRoomId' name='loadRoomId'></select>
+	<br>
+	<br>
+	<form method="post">
+		<button type="button" id="saveDataAsJSON">Save to Database</button>
+		<input type="text" name="roomName" id="roomName" placeholder="room name"></input>
+	</form>
+	<div id='text1'></div>
+	<div id='result'></div>
  
 </body>
 </html>
