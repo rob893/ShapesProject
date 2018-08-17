@@ -33,8 +33,8 @@ if(isset($_POST['data']) && isset($_POST['roomName'])){
 		}
 	}
 	
-	echo "Room name: ".$_POST['roomName']."<br>";
-	print_r($data);
+	echo "Room ".$_POST['roomName']." saved!";
+	//print_r($data);
 }
 
 else if(isset($_POST['roomId'])){
@@ -42,18 +42,18 @@ else if(isset($_POST['roomId'])){
 	$sqlRoom = "SELECT * FROM shapes INNER JOIN rooms ON rooms.roomName = shapes.roomName WHERE rooms.id = '$roomId'";
 	$results = $conn->query($sqlRoom);
 
-	$testRoom = [];
+	$roomToLoad = [];
 	while($row = $results->fetch_assoc()){
-		$testRoom['roomSize']['h'] = (float)$row['height'];
-		$testRoom['roomSize']['w'] = (float)$row['width'];
-		$testRoom['roomShapes'][$row['shapeId']]['x'] = (float)$row['x'];
-		$testRoom['roomShapes'][$row['shapeId']]['y'] = (float)$row['y'];
-		$testRoom['roomShapes'][$row['shapeId']]['h'] = (float)$row['h'];
-		$testRoom['roomShapes'][$row['shapeId']]['w'] = (float)$row['w'];
+		$roomToLoad['roomSize']['h'] = (float)$row['height'];
+		$roomToLoad['roomSize']['w'] = (float)$row['width'];
+		$roomToLoad['roomShapes'][$row['shapeId']]['x'] = (float)$row['x'];
+		$roomToLoad['roomShapes'][$row['shapeId']]['y'] = (float)$row['y'];
+		$roomToLoad['roomShapes'][$row['shapeId']]['h'] = (float)$row['h'];
+		$roomToLoad['roomShapes'][$row['shapeId']]['w'] = (float)$row['w'];
 	}
 	
-	$testRoomJSON = json_encode($testRoom);
-	echo $testRoomJSON;
+	$roomToLoadJSON = json_encode($roomToLoad);
+	echo $roomToLoadJSON;
 }
 
 else if(isset($_POST['updateSelectOptions'])){
